@@ -21,7 +21,7 @@ metadata:
   labels:
     app: memoryeater
 spec:
-  replicas: 15
+  replicas: 5
   selector:
     matchLabels:
       app: memoryeater
@@ -31,8 +31,8 @@ spec:
         app: memoryeater
     spec:
       containers:
-      - name: memoryeater
-        image: gambtho/memoryeater:v2
+      - name: memoryeater-limits
+        image: gambtho/memoryeater:v3.1
         imagePullPolicy: IfNotPresent
         resources:
           requests:
@@ -42,8 +42,14 @@ spec:
             memory: "2G"
             cpu: "500m"
         env:
-        - name: JAVA_OPTS
-          value: ""
+        - name: SLEEP_PERIOD
+          value: "100"
+        volumeMounts:
+        - mountPath: /app/dump
+          name: dump-volume
+      volumes:
+      - name: dump-volume
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,7 +59,7 @@ metadata:
   labels:
     app: memoryeater
 spec:
-  replicas: 15
+  replicas: 5
   selector:
     matchLabels:
       app: memoryeater
@@ -63,12 +69,20 @@ spec:
         app: memoryeater
     spec:
       containers:
-      - name: memoryeater
-        image: gambtho/memoryeater:v2
+      - name: memoryeater-worst
+        image: gambtho/memoryeater:v3.1
         imagePullPolicy: IfNotPresent
         env:
+        - name: SLEEP_PERIOD
+          value: "100"
         - name: JAVA_OPTS
-          value: ""
+          value: "-Xmx16G -XX:HeapDumpPath=/app/dump"
+        volumeMounts:
+        - mountPath: /app/dump
+          name: dump-volume
+      volumes:
+      - name: dump-volume
+        emptyDir: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -78,7 +92,7 @@ metadata:
   labels:
     app: memoryeater
 spec:
-  replicas: 15
+  replicas: 5
   selector:
     matchLabels:
       app: memoryeater
@@ -88,8 +102,8 @@ spec:
         app: memoryeater
     spec:
       containers:
-      - name: memoryeater
-        image: gambtho/memoryeater:v2
+      - name: memoryeater-recommended
+        image: gambtho/memoryeater:v3.1
         imagePullPolicy: IfNotPresent
         resources:
           requests:
@@ -98,4 +112,17 @@ spec:
           limits:
             memory: "2G"
             cpu: "500m"
+        env:
+        - name: SLEEP_PERIOD
+          value: "100"
+        - name: JAVA_OPTS
+          value: "-XX:+UseCGroupMemoryLimitForHeap -XX:+UnlockExperimentalVMOptions -XX:HeapDumpPath=/app/dump"
+        volumeMounts:
+        - mountPath: /app/dump
+          name: dump-volume
+      volumes:
+      - name: dump-volume
+        emptyDir: {}
 
+
+        
