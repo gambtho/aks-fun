@@ -21,7 +21,7 @@ metadata:
   labels:
     app: memoryeater
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: memoryeater
@@ -59,7 +59,7 @@ metadata:
   labels:
     app: memoryeater
 spec:
-  replicas: 15
+  replicas: 10
   selector:
     matchLabels:
       app: memoryeater
@@ -76,7 +76,7 @@ spec:
         - name: SLEEP_PERIOD
           value: "100"
         - name: JAVA_OPTS
-          value: "-Xmx32G -XX:HeapDumpPath=/app/dump -XX:+HeapDumpOnOutOfMemoryError"
+          value: "-XX:HeapDumpPath=/app/dump -XX:+HeapDumpOnOutOfMemoryError -XX:+CreateMinidumpOnCrash"
         volumeMounts:
         - mountPath: /app/dump
           name: dump-volume
@@ -92,7 +92,7 @@ metadata:
   labels:
     app: memoryeater
 spec:
-  replicas: 1
+  replicas: 10
   selector:
     matchLabels:
       app: memoryeater
@@ -102,8 +102,18 @@ spec:
         app: memoryeater
     spec:
       containers:
+      - name: mv-heap-dump
+        image: alpine
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          apk add --no-cache inotify-tools &&
+          inotifywait -m /dumps -e close_write | while read path action file; do mv "$path$file" $path$file-$(date "+%Y.%m.%d-%H.%M.%S"); done;
+        volumeMounts:
+        - mountPath: /dumps
+          name: dump-volume
       - name: memoryeater-recommended
-        image: gambtho/memoryeater:v3.4.2
+        image: gambtho/memoryeater:v11.0
         imagePullPolicy: IfNotPresent
         resources:
           requests:
@@ -116,7 +126,7 @@ spec:
         - name: SLEEP_PERIOD
           value: "100"
         - name: JAVA_OPTS
-          value: "-XX:+UseCGroupMemoryLimitForHeap -XX:+UnlockExperimentalVMOptions -XX:HeapDumpPath=/app/dump -XX:+HeapDumpOnOutOfMemoryError"
+          value: "-XX:HeapDumpPath=/app/dump -XX:+HeapDumpOnOutOfMemoryError -XX:+CreateMinidumpOnCrash"
         volumeMounts:
         - mountPath: /app/dump
           name: dump-volume
