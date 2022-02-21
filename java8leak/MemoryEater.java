@@ -11,9 +11,15 @@ public class MemoryEater
     Vector v = new Vector();
     while (true)
     {
-      byte b[] = new byte[1048576];
-      v.add(b);
+      int size = 1048576;
       Runtime rt = Runtime.getRuntime();
+      if(rt.freeMemory()<size) {
+        size = (int)rt.freeMemory()/2;
+      }
+
+      byte b[] = new byte[size];
+      v.add(b);
+      
       System.out.println("free memory: " + rt.freeMemory() + ", total memory: " +rt.totalMemory() + ", max memory: " + rt.maxMemory());
       Thread.sleep(sleepPeriod);
     }
